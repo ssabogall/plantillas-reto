@@ -29,4 +29,6 @@ public interface TurnoRepository extends JpaRepository<Turno, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select t from Turno t where t.id = :id")
     Optional<Turno> buscarParaActualizar(@Param("id") Long id);
+
+    List<Turno> findByEstado(Estado estado);
 }
