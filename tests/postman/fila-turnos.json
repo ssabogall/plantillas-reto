@@ -57,7 +57,7 @@
       "name": "P03 Turno 7 pendiente cargado del CSV",
       "request": {
         "method": "GET",
-        "url": "{{baseUrl}}/turnos/9"
+        "url": "{{baseUrl}}/turnos/8"
       },
       "event": [
         {
@@ -75,10 +75,10 @@
       ]
     },
     {
-      "name": "P04 Turno 7 cancelado cargado del CSV",
+      "name": "P04 Turno 9 respeta su lugar en la fila",
       "request": {
         "method": "GET",
-        "url": "{{baseUrl}}/turnos/8"
+        "url": "{{baseUrl}}/turnos/7"
       },
       "event": [
         {
@@ -86,8 +86,8 @@
           "script": {
             "exec": [
               "const d = pm.response.json();",
-              "pm.test('Es el turno 7', () => pm.expect(d.numero).to.eql(7));",
-              "pm.test('Esta cancelado', () => pm.expect(d.estado).to.eql('CANCELADO'));"
+              "pm.test('Es el turno 9', () => pm.expect(d.numero).to.eql(9));",
+              "pm.test('Tiene 3 personas delante (6, 7 y 8)', () => pm.expect(d.personasDelante).to.eql(3));"
             ]
           }
         }
