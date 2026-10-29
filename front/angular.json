@@ -6,7 +6,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "front": {
+    "frontend-turnos": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -56,10 +56,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "front:build:production"
+              "buildTarget": "frontend-turnos:build:production"
             },
             "development": {
-              "buildTarget": "front:build:development"
+              "buildTarget": "frontend-turnos:build:development"
             }
           },
           "defaultConfiguration": "development"
