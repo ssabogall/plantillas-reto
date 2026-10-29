@@ -11,7 +11,7 @@ public class Turno {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false)
     private Integer numero;
 
     @Enumerated(EnumType.STRING)

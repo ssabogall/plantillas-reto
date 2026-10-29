@@ -6,8 +6,10 @@ import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
-
+import org.springframework.data.repository.query.Param;
 import java.util.Optional;
+import java.util.List;
+
 
 public interface TurnoRepository extends JpaRepository<Turno, Long> {
 
@@ -23,4 +25,8 @@ public interface TurnoRepository extends JpaRepository<Turno, Long> {
     Optional<Turno> findFirstByEstadoOrderByNumeroAsc(Estado estado);
 
     Optional<Turno> findFirstByEstadoOrderByLlamadoEnDescNumeroDesc(Estado estado);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select t from Turno t where t.id = :id")
+    Optional<Turno> buscarParaActualizar(@Param("id") Long id);
 }
