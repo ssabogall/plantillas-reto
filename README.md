@@ -1,297 +1,183 @@
-# Plantillas Reto Accenture — Changemakers Tech
+# TurnoFácil — Sistema de fila virtual
 
-Plantillas listas para arrancar rápido en el reto: un backend en **Java (Spring Boot)**, un backend en **Python (FastAPI)**, un test automatizado con **Selenium** y un frontend en **Angular**.
+Aplicación para solicitar y administrar turnos de atención sin filas físicas. El repositorio reúne una **demo web funcional**, el **código fuente de una API de turnos**, dos APIs CRUD de ejemplo y pruebas automatizadas.
 
-Las dos APIs hacen lo mismo: un CRUD de `items` (crear, listar, consultar, actualizar y eliminar). Se usa la que elija el equipo.
+> **Estado actual:** la interfaz Angular trabaja con datos de demostración en memoria y todavía no consume la API Java de turnos. El código de esa API está en `back/`, pero esa carpeta aún no incluye `pom.xml` ni Maven Wrapper. Las carpetas `api/` y `api-python/` son CRUD de `items`, independientes del sistema de turnos.
 
----
+## Funcionalidades
 
-## Estructura
+- **Cliente:** solicita un turno indicando nombre y servicio, consulta el número asignado y puede cancelar su turno pendiente.
+- **Asesor:** visualiza la fila, llama al siguiente, marca el turno actual como atendido y cancela turnos pendientes.
+- **Fila:** organiza los turnos por número, muestra cuántas personas esperan y presenta el tiempo promedio de espera.
+- **Servicios disponibles en la demo:** Atención general, Pagos y consultas e Información.
+- **Datos de inicio:** la demo comienza con turnos de ejemplo del 6 al 10. Los cambios se mantienen solo mientras la página está abierta; al recargar, se restablece el estado inicial.
 
-```
-entrevistaAccenture/
-├── api/              → Backend Java con Spring Boot (puerto 8080)
-├── api-python/       → Backend Python con FastAPI (puerto 8000) + test de Selenium
-├── front/            → Frontend Angular (puerto 4200)
-├── .gitignore        → Archivos que Git no debe subir
-└── README.md         → Este archivo
-```
+## Estructura del repositorio
 
----
-
-## Herramientas usadas
-
-| Herramienta | Para qué sirve |
+| Ruta | Contenido |
 |---|---|
-| **Git** | Control de versiones: guarda el historial de cambios del código. |
-| **GitHub CLI (`gh`)** | Maneja GitHub desde la terminal: iniciar sesión, crear repos y hacer push sin pedir contraseña. |
-| **Java 17 (Temurin)** | Lenguaje y entorno que necesita Spring Boot. Debe ser 17 o mayor. |
-| **Maven (`mvnw`)** | Descarga las dependencias y compila/ejecuta el proyecto Java. `mvnw` es un "wrapper" que trae Maven incluido. |
-| **Spring Boot** | Framework de Java para crear APIs REST rápido. |
-| **H2** | Base de datos en memoria. No hay que instalar nada, pero se borra al apagar el servidor. |
-| **Python 3** | Lenguaje del backend alterno y del test de Selenium. |
-| **venv** | Entorno virtual de Python: aísla las librerías de este proyecto del resto del computador. |
-| **FastAPI** | Framework de Python para crear APIs REST. Genera documentación interactiva en `/docs`. |
-| **Uvicorn** | Servidor que ejecuta la aplicación FastAPI. |
-| **Selenium** | Automatiza el navegador (abre Chrome, navega y verifica cosas). Se usa para pruebas end-to-end. |
-| **Node.js + npm** | Entorno para ejecutar JavaScript fuera del navegador y su gestor de paquetes. Angular lo necesita. |
-| **Angular CLI (`ng`)** | Herramienta para crear, ejecutar y generar partes de un proyecto Angular. |
-| **Postman** | Prueba APIs manualmente (enviar GET, POST, PUT, DELETE). |
-| **VS Code / IntelliJ** | Editores de código. |
+| `front/` | Aplicación web Angular de TurnoFácil. Demo cliente/asesor con datos locales en memoria. |
+| `back/` | Fuentes Java de Spring Boot para la lógica de fila virtual, carga inicial CSV y endpoints de turnos. Aún falta configuración de compilación/ejecución. |
+| `api/` | API independiente en Spring Boot para CRUD de `items`, con persistencia JPA/H2. |
+| `api-python/` | API independiente en FastAPI para CRUD de `items`, con almacenamiento en memoria. |
+| `tests/datos/` | Validaciones de calidad del CSV de turnos. |
+| `tests/e2e/` | Pruebas end-to-end con Selenium contra la aplicación Angular. |
+| `tests/postman/` | Colección Postman de pruebas de la API de turnos. |
+| `docs/` | Contrato de API y casos de prueba documentados. |
 
----
+## Tecnologías
 
-## 1. Backend Java — Spring Boot
+- **Frontend:** Angular, TypeScript, HTML y CSS.
+- **API de turnos:** Java, Spring Boot, Spring Data JPA y Jakarta Persistence (fuentes en `back/`).
+- **CRUD de ejemplo:** Spring Boot/JPA/H2 en `api/` y FastAPI/Pydantic en `api-python/`.
+- **Pruebas:** Selenium, pytest y Postman/Newman.
 
-### Prender
+## Requisitos
+
+Instala las herramientas necesarias según el módulo que vayas a ejecutar:
+
+- Node.js y npm para Angular.
+- Java 17 o superior para `api/` y, cuando se configure, `back/`.
+- Python 3 para `api-python/` y las pruebas con pytest/Selenium.
+- Google Chrome para las pruebas Selenium.
+
+## Ejecutar la aplicación web
+
+En PowerShell, desde la raíz del repositorio:
 
 ```powershell
-cd "C:\Users\Lenovo\Documents\Universidad\2026-2\entrevistaAccenture\api"
+cd front
+npm install
+npm start
+```
+
+Abre [http://localhost:4200](http://localhost:4200). La aplicación permite cambiar entre **Solicitar turno** y **Panel del asesor** desde la navegación superior. Detén el servidor con `Ctrl+C`.
+
+Para compilar o ejecutar las pruebas unitarias de Angular:
+
+```powershell
+npm run build
+npm test
+```
+
+> El frontend es actualmente una demo independiente: no requiere iniciar ningún backend. Sus turnos, avisos y métricas se gestionan localmente en el componente y no persisten en una base de datos.
+
+## API de turnos — código disponible en `back/`
+
+El backend implementa los estados `ESPERANDO`, `LLAMADO`, `ATENDIDO` y `CANCELADO`, una carga inicial desde `turnos_iniciales.csv` y estos endpoints:
+
+| Método | Ruta | Uso |
+|---|---|---|
+| `POST` | `/turnos` | Solicitar un turno. Responde `201` con el turno asignado. |
+| `GET` | `/turnos/{id}` | Consultar un turno por su identificador de base de datos. |
+| `POST` | `/turnos/siguiente` | Llamar al siguiente turno en espera. |
+| `POST` | `/turnos/actual/atendido` | Marcar como atendido el turno llamado actualmente. |
+| `GET` | `/fila/espera` | Consultar cantidad en espera y número del turno actual. |
+| `POST` | `/turnos/{id}/cancelar` | Cancelar un turno que todavía no haya sido atendido. |
+
+Las reglas incluyen atender por orden de número, continuar la numeración desde los datos existentes y rechazar operaciones no válidas con `404` o `409`, según el caso. El parámetro `{id}` es el identificador interno del turno, no su número visible.
+
+**Para poder ejecutar este backend hace falta completar `back/` con un `pom.xml` (o equivalente) y la configuración de aplicación/base de datos.** No uses las instrucciones antiguas de Maven para esta carpeta: el wrapper disponible está en `api/`, que es otro proyecto CRUD. El contrato detallado está en [`docs/contrato-api.md`](docs/contrato-api.md).
+
+> La espera promedio aparece como requisito en los casos documentados, pero no está expuesta por los endpoints de `back/` actuales. Además, el valor de la demo Angular está definido localmente. Conviene alinear estas implementaciones antes de integrar la métrica.
+
+## APIs CRUD de ejemplo
+
+Estas APIs son proyectos de ejemplo para `items`; **no implementan los endpoints de turnos**.
+
+### Java — `api/` (puerto 8080)
+
+```powershell
+cd api
 .\mvnw.cmd spring-boot:run
 ```
 
-- `cd ...` → entra a la carpeta del proyecto.
-- `.\mvnw.cmd spring-boot:run` → compila y arranca el servidor.
-
-Está listo cuando aparece **`Started ApiApplication`**. La terminal queda ocupada mientras el servidor corre; para probarlo, abre otra.
-
-### Apagar
-
-`Ctrl + C` en la terminal donde está corriendo.
-
-### Endpoints
-
-| Método | URL | Qué hace |
+| Método | Ruta | Acción |
 |---|---|---|
-| GET | `http://localhost:8080/api/items` | Lista todos los items |
-| GET | `http://localhost:8080/api/items/{id}` | Consulta un item |
-| POST | `http://localhost:8080/api/items` | Crea un item |
-| PUT | `http://localhost:8080/api/items/{id}` | Actualiza un item |
-| DELETE | `http://localhost:8080/api/items/{id}` | Elimina un item |
+| `GET` | `/api/items` | Listar items |
+| `GET` | `/api/items/{id}` | Consultar un item |
+| `POST` | `/api/items` | Crear un item |
+| `PUT` | `/api/items/{id}` | Actualizar un item |
+| `DELETE` | `/api/items/{id}` | Eliminar un item |
 
-Cuerpo JSON para POST y PUT:
+Cuerpo de ejemplo para `POST` y `PUT`:
 
 ```json
-{ "nombre": "Prueba", "descripcion": "Primer item" }
+{"nombre":"Prueba","descripcion":"Primer item"}
 ```
 
-### Probar desde PowerShell
+Ejecuta sus pruebas automatizadas con:
 
 ```powershell
-Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/items -ContentType "application/json" -Body '{"nombre":"Prueba","descripcion":"Primer item"}'
-Invoke-RestMethod http://localhost:8080/api/items
+.\mvnw.cmd test
 ```
 
-- `Invoke-RestMethod` → hace peticiones HTTP desde PowerShell (como Postman, pero en la terminal).
-- `-Method Post` → tipo de petición. `-Body` → los datos en JSON.
+La aplicación usa JPA y H2; revisa [`api/src/main/resources/application.properties`](api/src/main/resources/application.properties) si cambias la configuración.
 
-### Archivos importantes
-
-```
-api/src/main/java/com/reto/api/
-├── ApiApplication.java    → Punto de entrada (arranca la app)
-├── Item.java              → Entidad: define la tabla y sus campos
-├── ItemRepository.java    → Acceso a datos (Spring genera el SQL)
-└── ItemController.java    → Endpoints REST
-```
-
-Para agregar una entidad nueva, copia el patrón: entidad → repositorio → controlador.
-
-### Equivalencias con NestJS
-
-| NestJS | Spring Boot |
-|---|---|
-| `@Controller()` | `@RestController` + `@RequestMapping` |
-| `@Get()`, `@Post()` | `@GetMapping`, `@PostMapping` |
-| `@Injectable()` | `@Service` |
-| Repositorio TypeORM | `JpaRepository<Entidad, Long>` |
-| `@Body()`, `@Param()` | `@RequestBody`, `@PathVariable` |
-
----
-
-## 2. Backend Python — FastAPI
-
-### Prender
-
-```powershell
-cd "C:\Users\Lenovo\Documents\Universidad\2026-2\entrevistaAccenture\api-python"
-.\venv\Scripts\Activate.ps1
-uvicorn main:app --reload --port 8000
-```
-
-- `.\venv\Scripts\Activate.ps1` → activa el entorno virtual. Aparece `(venv)` al inicio de la línea.
-- `uvicorn main:app` → ejecuta el objeto `app` del archivo `main.py`.
-- `--reload` → reinicia solo cada vez que guardas un cambio.
-- `--port 8000` → puerto donde escucha.
-
-Documentación interactiva para probar el CRUD desde el navegador: **http://localhost:8000/docs**
-
-### Apagar
-
-`Ctrl + C`. Para salir del entorno virtual: `deactivate`.
-
-### Endpoints
-
-Los mismos que Spring Boot, pero en el puerto **8000**: `http://localhost:8000/api/items`.
-
-Los datos se guardan en memoria (un diccionario), así que se borran al apagar el servidor.
-
-### Instalar librerías nuevas
-
-```powershell
-pip install nombre-libreria
-pip freeze > requirements.txt
-```
-
-- `pip install` → instala una librería dentro del venv.
-- `pip freeze > requirements.txt` → guarda la lista de librerías para que otros las instalen igual.
-
-### Si clonas el repo en otro computador
+### Python — `api-python/` (puerto 8000)
 
 ```powershell
 cd api-python
-py -m venv venv
-.\venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+py -m pip install fastapi "uvicorn[standard]"
+py -m uvicorn main:app --reload --port 8000
 ```
 
-- `py -m venv venv` → crea el entorno virtual (la carpeta `venv` no se sube a GitHub).
-- `pip install -r requirements.txt` → instala todo lo que está en la lista.
+La documentación interactiva está en [http://localhost:8000/docs](http://localhost:8000/docs). Los endpoints CRUD son los mismos que los de la API Java (`/api/items`). La información se guarda en memoria y se pierde al reiniciar el proceso. Para salir del entorno virtual, ejecuta `deactivate`.
 
----
+## Pruebas automatizadas
 
-## 3. Test de Selenium
+### Calidad del CSV
 
-Requiere que **FastAPI esté corriendo** (sección 2) en otra terminal.
+Desde la raíz, instala pytest si aún no está disponible y ejecuta:
 
 ```powershell
-cd "C:\Users\Lenovo\Documents\Universidad\2026-2\entrevistaAccenture\api-python"
-.\venv\Scripts\Activate.ps1
-python test_selenium.py
+py -m pip install pytest
+py -m pytest tests/datos/test_datos.py -v
 ```
 
-- Abre Chrome automáticamente, entra a `http://localhost:8000/docs`, verifica el título de la página y lo cierra.
-- Si todo sale bien imprime **`SELENIUM OK`**.
-
-Para probar otra página, cambia la URL en `driver.get(...)` y la condición del `assert`.
-
----
-
-## 4. Frontend — Angular
-
-### Prender
+El test busca por defecto `turnos_hoy.csv` en la raíz. El CSV versionado está en `back/src/main/resources/turnos_iniciales.csv`; para usarlo, indica la ruta explícitamente en PowerShell:
 
 ```powershell
-cd "C:\Users\Lenovo\Documents\Universidad\2026-2\entrevistaAccenture\front"
-ng serve --open
+$env:CSV_TURNOS = "back/src/main/resources/turnos_iniciales.csv"
+py -m pytest tests/datos/test_datos.py -v
+Remove-Item Env:CSV_TURNOS
 ```
 
-- `ng serve` → compila y levanta el servidor de desarrollo. Recarga solo al guardar cambios.
-- `--open` → abre el navegador en **http://localhost:4200**.
+La suite verifica columnas, estados, horas, duplicados conocidos, orden cronológico, espera promedio y numeración. Sin el archivo esperado, pytest omite las pruebas.
 
-### Apagar
+### End-to-end con Selenium
 
-`Ctrl + C`.
-
-### Comandos útiles
+Inicia Angular en una terminal (`cd front; npm start`) y, desde otra terminal en la raíz, instala las dependencias de prueba y ejecútalas:
 
 ```powershell
-ng generate component nombre    # Crea un componente (vista)
-ng generate service nombre      # Crea un servicio (para llamar a la API)
-npm install                     # Instala dependencias si clonaste el repo
+py -m pip install selenium pytest pytest-html
+py -m pytest tests/e2e/test_e2e.py -v --html=tests/e2e/reporte-e2e.html --self-contained-html
 ```
 
-Para consumir la API desde Angular se usa `HttpClient` apuntando a `http://localhost:8080/api/items` (Spring) o `http://localhost:8000/api/items` (FastAPI). Las dos APIs ya permiten CORS, así que el frontend puede llamarlas sin bloqueos.
-
----
-
-## 5. Postman
-
-1. Abre Postman y crea una petición nueva.
-2. Elige el método (GET, POST, PUT, DELETE).
-3. Escribe la URL, por ejemplo `http://localhost:8080/api/items`.
-4. Para POST o PUT: pestaña **Body → raw → JSON** y pega:
-   ```json
-   { "nombre": "Prueba", "descripcion": "Primer item" }
-   ```
-5. Clic en **Send**.
-
----
-
-## 6. Git y GitHub
-
-### Guardar y subir cambios
+Selenium abre Chrome y prueba el flujo del cliente y del asesor sobre la misma instancia de la demo. Para usar otra URL en PowerShell:
 
 ```powershell
-git add .
-git commit -m "Descripcion del cambio"
-git push
+$env:FRONT_URL = "http://localhost:4200"
 ```
 
-- `git add .` → prepara todos los archivos modificados.
-- `git commit -m "..."` → guarda un punto en el historial con un mensaje.
-- `git push` → sube los commits a GitHub.
+### Postman
 
-### Trabajo en equipo (recomendado en el reto)
+La colección está en [`tests/postman/fila-turnos.json`](tests/postman/fila-turnos.json). Está pensada para ejecutarse contra la API de turnos y en un estado inicial limpio. Para generar reporte HTML con Newman:
 
 ```powershell
-git pull                          # Trae los cambios de los demás
-git checkout -b feature/nombre    # Crea una rama para tu tarea
-git push -u origin feature/nombre # Sube tu rama por primera vez
+npm install --global newman newman-reporter-htmlextra
+newman run tests/postman/fila-turnos.json -r htmlextra --reporter-htmlextra-export tests/postman/reporte-postman.html
 ```
 
-Cada quien trabaja en su rama y se unen a `main` con un Pull Request. Así se evitan conflictos.
+Ten en cuenta que el backend de `back/` todavía requiere configuración de compilación y ejecución antes de poder correr esta colección contra él. El alcance y los resultados esperados están en [`docs/casos-de-prueba.md`](docs/casos-de-prueba.md).
 
-### Clonar el repo
+## Puertos locales
 
-```powershell
-gh repo clone ssabogall/plantillas-reto
-```
-
-### Verificar sesión de GitHub
-
-```powershell
-gh auth status
-```
-
----
-
-## 7. Resumen rápido de puertos
-
-| Servicio | Puerto | URL |
-|---|---|---|
-| Spring Boot | 8080 | http://localhost:8080/api/items |
-| FastAPI | 8000 | http://localhost:8000/docs |
-| Angular | 4200 | http://localhost:4200 |
-
----
-
-## 8. Problemas comunes
-
-**"Port 8080 was already in use"** (o 8000 / 4200)
-Ya hay algo corriendo en ese puerto, seguramente un servidor que dejaste abierto. Ciérralo con `Ctrl + C` en su terminal o mira qué lo usa:
-
-```powershell
-netstat -ano | findstr :8080
-taskkill /PID <numero> /F
-```
-
-- `netstat -ano | findstr :8080` → muestra qué proceso usa el puerto (el último número es el PID).
-- `taskkill /PID <numero> /F` → cierra ese proceso.
-
-**"running scripts is disabled on this system"** al activar el venv o usar `ng`
-
-```powershell
-Set-ExecutionPolicy -Scope CurrentUser RemoteSigned -Force
-```
-
-Permite ejecutar scripts locales en PowerShell para tu usuario.
-
-**`java -version` muestra 1.8**
-El computador también tiene Java 8. Cierra todas las terminales y abre una nueva; si sigue igual, reinicia el computador. Spring Boot necesita la 17.
-
-**`uvicorn` o `pip` no se reconocen**
-Falta activar el entorno virtual: `.\venv\Scripts\Activate.ps1`.
-
-**Spring Boot tarda mucho la primera vez**
-Es normal: descarga dependencias. Las siguientes veces arranca en segundos.
+| Aplicación | Puerto | Dirección |
+|---|---:|---|
+| Angular | 4200 | [http://localhost:4200](http://localhost:4200) |
+| CRUD Java (`api/`) | 8080 | [http://localhost:8080/api/items](http://localhost:8080/api/items) |
+| CRUD Python (`api-python/`) | 8000 | [http://localhost:8000/docs](http://localhost:8000/docs) |
+| API de turnos (`back/`) | Sin configurar | Requiere completar configuración del proyecto. |
