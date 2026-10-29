@@ -74,6 +74,21 @@ public class TurnoService {
         return r;
     }
 
+    // cancelar turno
+    @Transactional
+    public Map<String, Object> cancelar(Long id) {
+        Turno t = repo.buscarParaActualizar(id).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "El turno no existe"));
+
+        if (t.getEstado() == Estado.ATENDIDO || t.getEstado() == Estado.CANCELADO) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "El turno ya está " + t.getEstado().name().toLowerCase());
+        }
+        t.setEstado(Estado.CANCELADO);
+        repo.save(t);
+        return resumen(t);
+    }
+
     private Integer turnoActual() {
         return repo.findFirstByEstadoOrderByLlamadoEnDescNumeroDesc(Estado.LLAMADO)
                 .map(Turno::getNumero).orElse(null);
