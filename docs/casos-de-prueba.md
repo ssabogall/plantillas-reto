@@ -132,3 +132,6 @@ No dependen del back ni del front: validan el archivo de entrada.
 | E2E-07 | Cliente llena nombre y servicio y da clic en "Obtener mi turno" | Ve su número, estado y hora |
 | E2E-08 | Cliente da clic sin escribir nombre | No se registra el turno y se muestra un aviso |
 | E2E-09 | La lista de servicios | Muestra exactamente las 3 opciones |
+| DAT-13 | `tiempo_espera_min` | Igual a atención - solicitud en atendidos; vacío en los demás |
+| DAT-14 | `es_pendiente` / `es_cancelado` | Coinciden con la columna `estado` |
+| DAT-15 | `turno_id` | Único, aunque `numero` se repita |
