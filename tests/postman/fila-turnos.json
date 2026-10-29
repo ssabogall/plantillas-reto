@@ -1,0 +1,653 @@
+{
+  "info": {
+    "name": "Fila virtual de turnos",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api"
+    }
+  ],
+  "item": [
+    {
+      "name": "CON-01 Estructura de la fila",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/fila"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const d = pm.response.json();",
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('enEspera es numero', () => pm.expect(d.enEspera).to.be.a('number'));",
+              "pm.test('esperaPromedioMin es numero', () => pm.expect(d.esperaPromedioMin).to.be.a('number'));",
+              "pm.test('turnos es una lista', () => pm.expect(d.turnos).to.be.an('array'));"
+            ]
+          }
+        }
+      ],
+      "response": [
+        {
+          "name": "fila",
+          "originalRequest": {
+            "method": "GET",
+            "url": "{{baseUrl}}/fila"
+          },
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"enEspera\": 5,\n  \"esperaPromedioMin\": 12.2,\n  \"turnos\": [\n    {\n      \"numero\": 6,\n      \"horaSolicitud\": \"08:25\",\n      \"horaAtencion\": null,\n      \"estado\": \"pendiente\"\n    },\n    {\n      \"numero\": 7,\n      \"horaSolicitud\": \"08:34\",\n      \"horaAtencion\": null,\n      \"estado\": \"pendiente\"\n    },\n    {\n      \"numero\": 8,\n      \"horaSolicitud\": \"08:38\",\n      \"horaAtencion\": null,\n      \"estado\": \"pendiente\"\n    },\n    {\n      \"numero\": 9,\n      \"horaSolicitud\": \"08:41\",\n      \"horaAtencion\": null,\n      \"estado\": \"pendiente\"\n    },\n    {\n      \"numero\": 10,\n      \"horaSolicitud\": \"08:45\",\n      \"horaAtencion\": null,\n      \"estado\": \"pendiente\"\n    }\n  ]\n}"
+        }
+      ]
+    },
+    {
+      "name": "CON-02 Estructura de un turno",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/fila"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const t = pm.response.json().turnos[0];",
+              "pm.test('Turno tiene los campos del contrato', () => pm.expect(t).to.include.keys('numero','horaSolicitud','horaAtencion','estado'));",
+              "pm.test('numero es entero', () => pm.expect(Number.isInteger(t.numero)).to.be.true);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "CON-03 Formato de horas HH:MM",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/fila"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('horaSolicitud cumple HH:MM', () => pm.response.json().turnos.forEach(t => pm.expect(t.horaSolicitud).to.match(/^\\d{2}:\\d{2}$/)));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "CON-04 Estados validos",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/fila"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Estados validos', () => pm.response.json().turnos.forEach(t => pm.expect(['pendiente','atendido','cancelado']).to.include(t.estado)));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "API-01 Fila inicial",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/fila"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const d = pm.response.json();",
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('5 personas en espera', () => pm.expect(d.enEspera).to.eql(5));",
+              "pm.test('Orden de llegada 6-7-8-9-10', () => pm.expect(d.turnos.map(t => t.numero)).to.eql([6,7,8,9,10]));",
+              "pm.test('Espera promedio 12.2', () => pm.expect(d.esperaPromedioMin).to.eql(12.2));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "API-02 Cancelados fuera de la fila",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/fila"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const d = pm.response.json();",
+              "pm.test('Todos los turnos de la fila estan pendientes', () => d.turnos.forEach(t => pm.expect(t.estado).to.eql('pendiente')));",
+              "pm.test('No esta el turno de las 08:30', () => pm.expect(d.turnos.map(t => t.horaSolicitud)).to.not.include('08:30'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "API-03 Turno 7 es el pendiente",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/turnos/7"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const d = pm.response.json();",
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Es el pendiente de las 08:34', () => { pm.expect(d.estado).to.eql('pendiente'); pm.expect(d.horaSolicitud).to.eql('08:34'); });",
+              "pm.test('Tiene 1 persona delante (el 6)', () => pm.expect(d.personasDelante).to.eql(1));"
+            ]
+          }
+        }
+      ],
+      "response": [
+        {
+          "name": "turno 7",
+          "originalRequest": {
+            "method": "GET",
+            "url": "{{baseUrl}}/turnos/7"
+          },
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"numero\": 7,\n  \"horaSolicitud\": \"08:34\",\n  \"horaAtencion\": null,\n  \"estado\": \"pendiente\",\n  \"personasDelante\": 1\n}"
+        }
+      ]
+    },
+    {
+      "name": "API-04 Cliente pide turno",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/turnos",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"Ana Perez\", \"servicio\": \"Atenci\u00f3n general\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const d = pm.response.json();",
+              "pm.test('Status 201', () => pm.response.to.have.status(201));",
+              "pm.test('Recibe el numero 11', () => pm.expect(d.numero).to.eql(11));",
+              "pm.test('Queda pendiente', () => pm.expect(d.estado).to.eql('pendiente'));",
+              "pm.test('Tiene 5 personas delante', () => pm.expect(d.personasDelante).to.eql(5));"
+            ]
+          }
+        }
+      ],
+      "response": [
+        {
+          "name": "nuevo",
+          "originalRequest": {
+            "method": "POST",
+            "url": "{{baseUrl}}/turnos"
+          },
+          "status": "Created",
+          "code": 201,
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"numero\": 11,\n  \"horaSolicitud\": \"16:10\",\n  \"horaAtencion\": null,\n  \"estado\": \"pendiente\",\n  \"personasDelante\": 5\n}"
+        }
+      ]
+    },
+    {
+      "name": "API-05 Numeros no se repiten",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/turnos",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"Luis Gomez\", \"servicio\": \"Pagos y consultas\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const d = pm.response.json();",
+              "pm.test('Recibe el numero 12', () => pm.expect(d.numero).to.eql(12));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "API-06 Asesor llama al siguiente",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/turnos/siguiente"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const d = pm.response.json();",
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Llama al turno 6', () => pm.expect(d.numero).to.eql(6));",
+              "pm.test('Queda atendido con hora de atencion', () => { pm.expect(d.estado).to.eql('atendido'); pm.expect(d.horaAtencion).to.not.be.null; });"
+            ]
+          }
+        }
+      ],
+      "response": [
+        {
+          "name": "siguiente",
+          "originalRequest": {
+            "method": "POST",
+            "url": "{{baseUrl}}/turnos/siguiente"
+          },
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"numero\": 6,\n  \"horaSolicitud\": \"08:25\",\n  \"horaAtencion\": \"16:12\",\n  \"estado\": \"atendido\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "API-07 Orden de llegada, no de archivo",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/turnos/siguiente"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const d = pm.response.json();",
+              "pm.test('Llama al 7 y no al 9', () => pm.expect(d.numero).to.eql(7));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "API-08 Fila despues de llamar",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/fila"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const d = pm.response.json();",
+              "pm.test('5 en espera (2 nuevos - 2 llamados)', () => pm.expect(d.enEspera).to.eql(5));",
+              "pm.test('El primero ahora es el 8', () => pm.expect(d.turnos[0].numero).to.eql(8));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "API-09 Turno inexistente",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/turnos/999"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ],
+      "response": [
+        {
+          "name": "no existe",
+          "originalRequest": {
+            "method": "GET",
+            "url": "{{baseUrl}}/turnos/999"
+          },
+          "status": "Not Found",
+          "code": 404,
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"message\": \"Turno no encontrado\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "API-11 Turno ya atendido",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/turnos/1"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const d = pm.response.json();",
+              "pm.test('Status 200', () => pm.response.to.have.status(200));",
+              "pm.test('Estado atendido', () => pm.expect(d.estado).to.eql('atendido'));",
+              "pm.test('No trae personasDelante', () => pm.expect(d).to.not.have.property('personasDelante'));"
+            ]
+          }
+        }
+      ],
+      "response": [
+        {
+          "name": "turno 1",
+          "originalRequest": {
+            "method": "GET",
+            "url": "{{baseUrl}}/turnos/1"
+          },
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"numero\": 1,\n  \"horaSolicitud\": \"08:02\",\n  \"horaAtencion\": \"08:05\",\n  \"estado\": \"atendido\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "API-12 Llamar siguiente con GET",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/turnos/siguiente"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('No permite GET (405 o 400)', () => pm.expect(pm.response.code).to.be.oneOf([400,405]));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "API-13 Tiempo de respuesta",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/fila"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Responde en menos de 500 ms', () => pm.expect(pm.response.responseTime).to.be.below(500));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "API-14 El cliente no elige su numero",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/turnos",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"numero\": 1, \"nombre\": \"Carlos Ruiz\", \"servicio\": \"Informaci\u00f3n\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const d = pm.response.json();",
+              "pm.test('Status 201', () => pm.response.to.have.status(201));",
+              "pm.test('Ignora el numero 1 enviado', () => pm.expect(d.numero).to.not.eql(1));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "API-15 Atencion no anterior a solicitud",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/turnos/siguiente"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const d = pm.response.json();",
+              "pm.test('horaAtencion >= horaSolicitud', () => pm.expect(d.horaAtencion >= d.horaSolicitud).to.be.true);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "API-16 Pedir turno con formulario valido",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/turnos",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"Maria Lopez\", \"servicio\": \"Informaci\u00f3n\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const d = pm.response.json();",
+              "pm.test('Status 201', () => pm.response.to.have.status(201));",
+              "pm.test('Devuelve numero, estado y hora de solicitud', () => pm.expect(d).to.include.keys('numero','estado','horaSolicitud'));",
+              "pm.test('Queda pendiente', () => pm.expect(d.estado).to.eql('pendiente'));",
+              "pm.collectionVariables.set('ultimoNumero', d.numero);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "API-17 Sin nombre",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/turnos",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"servicio\": \"Atenci\u00f3n general\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Rechaza sin nombre (400)', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "API-18 Nombre solo espacios",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/turnos",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"   \", \"servicio\": \"Atenci\u00f3n general\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Rechaza nombre vacio (400)', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "API-19 Servicio no valido",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/turnos",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"Pedro Diaz\", \"servicio\": \"Reclamos\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Rechaza servicio invalido (400)', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "API-20 Rechazados no consumen numero",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/turnos",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"nombre\": \"Laura Rios\", \"servicio\": \"Pagos y consultas\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const d = pm.response.json();",
+              "pm.test('Status 201', () => pm.response.to.have.status(201));",
+              "pm.test('Recibe el numero siguiente al ultimo valido', () => pm.expect(d.numero).to.eql(Number(pm.collectionVariables.get('ultimoNumero')) + 1));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "API-10 Vaciar fila y llamar",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/turnos/siguiente"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "  postman.setNextRequest('API-10 Vaciar fila y llamar');",
+              "} else {",
+              "  pm.test('Fila vacia responde 409', () => pm.response.to.have.status(409));",
+              "  pm.test('Mensaje de fila vacia', () => pm.expect(pm.response.text()).to.include('vacia'));",
+              "}"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
